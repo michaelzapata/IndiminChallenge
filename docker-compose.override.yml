@@ -1,0 +1,86 @@
+version: '3.4'
+
+services:
+  indimin.challenge.citizens.seq:
+    container_name: Indimin.Challenge.Citizens.Seq
+    restart: always
+    environment:
+      - ACCEPT_EULA=Y
+      - SEQ_FIRSTRUN_ADMINUSERNAME=indimin
+      # p@ssw0rd
+      - SEQ_FIRSTRUN_ADMINPASSWORDHASH=FCcPfZWlBAjvPCRr0ND/fd0RBbEkxMsMd9629Cerb86o9asX+A==
+      # - SEQ_FIRSTRUN_ADMINPASSWORDHASH="p@ssw0rd"
+      - SEQ_FIRSTRUN_REQUIREAUTHTENTICATIONFORHTTPINGESTION=True
+      - RUST_BACKTRACE=1    
+    ports:
+      - "4000:80"
+      - "4001:5431"
+    volumes:
+      - "indimin.challenge.citizens.seq.data:/data"
+
+  indimin.challenge.citizens.db:
+    container_name: Indimin.Challenge.Citizens.DB
+    restart: always
+    ports:
+      - "27017:27017"
+    volumes:
+      - "indimin.challenge.citizens.db.data:/data/db"
+
+  indimin.challenge.citizens.api:
+    container_name: Indimin.Challenge.Citizens.API
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - "DatabaseSettings:ConnectionString=mongodb://indimin.challenge.citizens.db:27017"
+      - "SeqSettings:ServerUrl=http://indimin.challenge.citizens.seq"
+    ports:
+      - "8001:80"
+    depends_on:
+      - indimin.challenge.citizens.db
+      - indimin.challenge.citizens.seq
+
+  indimin.challenge.tasking.api:
+    container_name: Indimin.Challenge.Tasking.API
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - "DatabaseSettings:ConnectionString=Server=indimin.challenge.tasking.db;Database=IndiminChallengeDB;User=sa;Password=Your_password123"
+      - "SeqSettings:ServerUrl=http://indimin.challenge.citizens.seq"
+    ports:
+      - "8002:80"
+    depends_on:
+      - indimin.challenge.tasking.db
+      - indimin.challenge.citizens.seq
+  
+  indimin.challenge.tasking.db:
+    container_name: Indimin.Challenge.Tasking.DB
+    environment:
+      SA_PASSWORD: "Your_password123"
+      ACCEPT_EULA: "Y"
+    ports:
+      - "5433:1433"
+    volumes:
+      - indimin.challenge.tasking.db.data:/var/opt/mssql
+
+  indimin.challenge.bff:
+    container_name: Indimin.Challenge.BFF
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - "Services:Citizens:UrlBase=http://indimin.challenge.citizens.api"
+      - "Services:CitizenTasks:UrlBase=http://indimin.challenge.tasking.api"
+      - "SeqSettings:ServerUrl=http://indimin.challenge.citizens.seq"
+    depends_on:
+      - indimin.challenge.citizens.api
+      - indimin.challenge.tasking.api
+      - indimin.challenge.citizens.seq
+    ports:
+      - "8003:80"
+
+  idimin.challenge.web:
+    container_name: Indimin.Challenge.Web
+    depends_on:
+      - indimin.challenge.citizens.api
+      - indimin.challenge.tasking.api
+      - indimin.challenge.bff
+    ports:
+      - "3000:3000"
+    volumes:
+      - indimin.challenge.web.app:/app

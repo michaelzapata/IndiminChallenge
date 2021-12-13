@@ -1,0 +1,39 @@
+version: '3.4'
+
+services:
+  indimin.challenge.citizens.db:
+    image: mongo
+  indimin.challenge.citizens.api:
+    image: ${DOCKER_REGISTRY-}indiminchallengecitizensapi
+    build:
+      context: .
+      dockerfile: Indimin.Challenge.Citizens.API/Dockerfile
+  indimin.challenge.citizens.seq:
+    image: datalust/seq
+
+  indimin.challenge.tasking.api:
+    image: ${DOCKER_REGISTRY-}indiminchallengetaskingapi
+    build:
+      context: .
+      dockerfile: Indimin.Challenge.Tasking.API/Dockerfile
+  indimin.challenge.tasking.db:
+    image: mcr.microsoft.com/mssql/server:2017-latest
+
+  indimin.challenge.bff:
+    image: ${DOCKER_REGISTRY-}indiminchallengebff
+    build:
+      context: .
+      dockerfile: Indimin.Challenge.BFF/Dockerfile
+  
+  idimin.challenge.web:
+    image: ${DOCKER_REGISTRY-}idiminchallengeweb
+    build:
+      context: .
+      dockerfile: Idimin.Challenge.Web/Dockerfile
+
+volumes:
+  indimin.challenge.citizens.db.data:
+  indimin.challenge.citizens.seq.data:
+  indimin.challenge.tasking.db.data:
+  indimin.challenge.web.app:
+
